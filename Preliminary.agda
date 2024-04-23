@@ -7,6 +7,32 @@ open import Cubical.Foundations.Everything
 open import Cubical.HITs.Truncation
 open import Cubical.Homotopy.Connected
 
+postulate
+  ridiculous : (X : Type ℓ-zero)
+               (w x y z : X) (p : w ≡ x) (q : x ≡ y) (r : z ≡ y) (s : w ≡ z)
+            → p ∙ q ≡ s ∙ r
+            → p ∙ q ∙ r ⁻¹ ≡ s
+
+  transportHell : (X : Type ℓ-zero)
+                  (w x y z : X) (p : w ≡ x) (q : y ≡ z) (r : w ≡ y)
+    → transport (λ i → p i ≡ q i) r ≡ p ⁻¹ ∙ r ∙ q
+
+  whyGodWhy : (W X Y Z : Type ℓ-zero) (p : W ≡ X) (q : Y ≡ Z) (r : (i : I) →
+              (p i) ≃ (q i))
+              → (w : W) → (fst (r i1) (transport p w))
+                          ≡ transport q (fst (r i0) w)
+
+  transportHell' : {X Y : Type ℓ-zero} {Z : X → Type ℓ-zero}
+    (s : X → X)
+    (f g : (x : X) → Y → Z (s x))
+    (h k : (x : X) → Y → Z x)
+    (a : (x : X) → Z (s x) → Z x)
+    (p : (x : X) (y : Y) → f x y ≡ g x y)
+    (q : (x : X) (y : Y) → h x y ≡ k x y)
+    (r : (x : X) (y : Y) → a x (g x y) ≡ k x y)
+    → transport (λ i → (x : X) (y : Y) → a x (p x y (~ i)) ≡ q x y (~ i)) r
+      ≡ λ x y → cong (a x) (p x y) ∙ r x y ∙ (q x y) ⁻¹
+
 △ : (X : Type ℓ-zero) → (X → X × X)
 △ X x = x , x
 
@@ -26,6 +52,11 @@ Family-over-index X A n = fst
 ℕ-Diagram : Type (ℓ-suc ℓ-zero)
 ℕ-Diagram = Σ[ A ∈ ℕ-Family ] ((n : ℕ) → A (1 + n) → A n)
 
+
+postulate
+-- realising too late that I want to avoid transport as much as possible
+  numEqMap : (A : ℕ-Family) (m n : ℕ) → m ≡ n → A m → A n
+
 Diagram-over-index : (X : Type ℓ-zero) (A : X → ℕ-Diagram)
                      (n : ℕ) → Σ[ x ∈ X ] (fst (A x) n) → X
 Diagram-over-index X A n = fst
@@ -40,6 +71,45 @@ ConeℕFam A X = (n : ℕ) → X → A n
 ConeℕDiag : ℕ-Diagram → Type (ℓ-zero) → Type (ℓ-zero)
 ConeℕDiag (A , a) X = Σ[ c ∈ ConeℕFam A X ]
                       ((n : ℕ) (x : X) → a n (c (1 + n) x) ≡ c n x)
+
+postulate
+  numEqMapNat' : (A : ℕ-Diagram) (X : Type ℓ-zero) (m n : ℕ) (p : m ≡ (1 + n))
+                (c : ConeℕDiag A X) (x : X)
+             → (snd A) n (numEqMap (fst A) m (1 + n) p (fst c m x)) ≡ fst c n x
+
+numMapFam : (A : ℕ-Family) (f : ℕ → ℕ) → ℕ-Family
+numMapFam A f n = A (f n)
+
+numMapDiag : (A : ℕ-Diagram) (f : ℕ → ℕ)
+                  (p : (n : ℕ) → f (1 + n) ≡ (1 + (f n))) → ℕ-Diagram
+fst (numMapDiag (A , a) f p) = numMapFam A f
+snd (numMapDiag (A , a) f p) n = a (f n)
+                               ∘ numEqMap A (f (1 + n)) (1 + (f n)) (p n)
+
+
+ConeIdentityType : (A : ℕ-Diagram) (X : Type ℓ-zero)
+                → ConeℕDiag A X → ConeℕDiag A X → Type (ℓ-zero)
+ConeIdentityType (A , a) X (c , h) (c' , h') =
+  Σ[ p ∈ ((n : ℕ) (x : X) → c' n x ≡ c n x) ]
+   ((n : ℕ) (x : X) → h' n x ∙ (p n x) ≡ cong (a n) (p (suc n) x) ∙ h n x )
+
+ConeIdentity : (A : ℕ-Diagram) (X : Type ℓ-zero) (c c' : ConeℕDiag A X)
+              → ConeIdentityType A X c c' → c ≡ c'
+ConeIdentity A X (c , h) (c' , h') (p , H) =
+  ΣPathP ((funExt (λ n → funExt λ x → p n x ⁻¹))
+         , toPathP (transportHell' suc (λ n → c' (suc n)) (λ n → c (suc n))
+                                   c' c (snd A) (λ n → p (suc n)) p h
+                  ∙ funExt
+                    (λ n → funExt
+                            (λ x → ridiculous (fst A n) _ _ _ _
+                                               (cong (snd A n) (p (suc n) x))
+                                               (h n x) (p n x) (h' n x)
+                                               (H n x ⁻¹)))))
+postulate
+  numEqMapℕCone : (A : ℕ-Diagram) (f : ℕ → ℕ)
+                  (p : (n : ℕ) → f (1 + n) ≡ (1 + (f n))) (X : Type ℓ-zero)
+                  → (ConeℕDiag A X)
+                  → (ConeℕDiag (numMapDiag A f p) X)
 
 -- maps that will be used to define limits 
 ConeℕFam→Map→ConeℕFam : (A : ℕ-Family)
@@ -114,36 +184,64 @@ postulate
                                   → Σ[ x ∈ X ] (fst (ℓim-over X A x)) → X
 ℓim-proj-over X A = fst
 
-postulate
-  KLimit : (X : Type ℓ-zero) → is-ℕ-Limit-of (KDiagram X) X
-{-fst (fst (KLimit X)) n x = x
-snd (fst (KLimit X)) n x = refl
-snd (KLimit X) = {!!}
-  where
-    limitIso : (Y : Type)
-      → isIso (ConeℕDiag→Map→ConeℕDiag (KDiagram X) X Y ((λ n x → x) ,
-                                                           (λ n x → refl)))
-    fst (limitIso Y) (c , h) = c 0
-    fst (snd (limitIso Y)) (c , h) =
-      ΣPathP ((funExt
-              (ℕElim refl
-              (λ n p → p ∙ funExt (λ y → h n y ⁻¹))))
-             , toPathP {!!}) -- last hole is filled by path induction
-    snd (snd (limitIso Y)) f = refl-}
+KLimitCone : (X : Type ℓ-zero) → ConeℕDiag (KDiagram X) X
+fst (KLimitCone X) n x = x
+snd (KLimitCone X) n x = refl
+
+KLimitIso : (X Y : Type)
+  → isIso (ConeℕDiag→Map→ConeℕDiag (KDiagram X) X Y (KLimitCone X))
+fst (KLimitIso X Y) (c , h) = c 0
+fst (snd (KLimitIso X Y)) (c , h) =
+  ConeIdentity (KDiagram X) Y _ (c , h)
+  ((ℕElim (λ y → refl) (λ n p y → h n y ∙ p y))
+  , ℕElim (λ u → rUnit _) (λ n p y → rUnit _))
+snd (snd (KLimitIso X Y)) f = refl
+
+KLimit : (X : Type ℓ-zero) → is-ℕ-Limit-of (KDiagram X) X
+fst (KLimit X) = KLimitCone X
+snd (KLimit X) Y =
+  isoToIsEquiv (iso _ (fst (KLimitIso X Y))
+                      (fst (snd (KLimitIso X Y))) (snd (snd (KLimitIso X Y))))
 
 Kℓim : (X : Type ℓ-zero) → fst (ℓim (KDiagram X)) ≃ X
 Kℓim X = UniqueLimit (KDiagram X) (ℓim (KDiagram X)) (X , KLimit X)
 
 postulate
-  indexShiftMaps : (k n : ℕ) (A : ℕ-Diagram)
-    → fst A (k + (1 + n)) → fst A (k + n)
+  hateNumbers : (k n : ℕ) → (k + (1 + n)) ≡ (1 + (k + n))
+
+  coneMap→LimMap : (A B : ℕ-Diagram)
+                      → ((X : Type ℓ-zero)
+                      → (ConeℕDiag A X → ConeℕDiag B X))
+                     → ((X : Type ℓ-zero)
+                     → is-ℕ-Limit-of A X → is-ℕ-Limit-of B X)
+
+indexShiftOfOne : ℕ-Diagram → ℕ-Diagram
+fst (indexShiftOfOne (A , a)) n = A (1 + n)
+snd (indexShiftOfOne (A , a)) n = a (1 + n)
+
+indexShiftOfOneCone : (A : ℕ-Diagram) (X : Type ℓ-zero)
+  → ConeℕDiag A X → ConeℕDiag (indexShiftOfOne A) X
+fst (indexShiftOfOneCone (A , a) X (c , h)) n = c (1 + n)
+snd (indexShiftOfOneCone (A , a) X (c , h)) n = h (1 + n)
+
+{-indexShiftMaps : (k n : ℕ) (A : ℕ-Diagram)
+  → fst A (k + (1 + n)) → fst A (k + n)
+indexShiftMaps k n (A , a) = a (k + n) ∘ numEqMap A _ _ (hateNumbers k n)-}
 
 indexShift : (k : ℕ) → ℕ-Diagram → ℕ-Diagram
-indexShift k A = (λ n → fst A (k + n)) , (λ n → indexShiftMaps k n A)
+indexShift k A = numMapDiag A (λ n → k + n) (hateNumbers k)
 
-postulate
- Limit-is-indexShiftLimit : (k : ℕ) (A : ℕ-Diagram)
-   → is-ℕ-Limit-of (indexShift k A) (fst (ℓim A))
+indexShift-isLimit : (k : ℕ) (A : ℕ-Diagram) (L : ℕ-Limit A)
+                   → is-ℕ-Limit-of (indexShift k A) (fst L)
+indexShift-isLimit k A L =
+ coneMap→LimMap
+       A (indexShift k A)
+          (numEqMapℕCone A (λ n → k + n) (hateNumbers k)) (fst L)
+          (snd L)
+
+Limit-is-indexShiftLimit : (k : ℕ) (A : ℕ-Diagram)
+  → is-ℕ-Limit-of (indexShift k A) (fst (ℓim A))
+Limit-is-indexShiftLimit k A = indexShift-isLimit k A (ℓim A)
 
 -- limit over a tower is the same as a limit over a restriction of the tower
 indexShiftLimit : (k : ℕ) (A : ℕ-Diagram)
@@ -257,10 +355,14 @@ postulate
   TruncMapConnected : {X : Type ℓ-zero} (n : ℕ)
                    → isConnectedFun n (TruncMap {X = X} n)
 
-  Connected342 : (X Y Z : Type ℓ-zero) (n : ℕ) (f : X → Y) (g : Y → Z)
-              → isConnectedFun n f → isConnectedFun n (g ∘ f)
-              → isConnectedFun n g
+Connected342 : (X Y Z : Type ℓ-zero) (n : ℕ) (f : X → Y) (g : Y → Z)
+            → isConnectedFun n f → isConnectedFun n (g ∘ f)
+            → isConnectedFun n g
+Connected342 X Y Z zero f g cf cgf b = tt* , (λ _ → refl)
+Connected342 X Y Z (suc n) f g cf cgf =
+  isConnectedFunCancel f g n (isConnectedFunSubtr n 1 f cf) cgf
 
+postulate
   ConnectedEquiv : (X Y : Type ℓ-zero) (f : X → Y) → isEquiv f
     → (n : ℕ) → isConnectedFun n f
 
@@ -278,8 +380,15 @@ MapOfFamilies : ℕ-Family → ℕ-Family → Type ℓ-zero
 MapOfFamilies A B = (n : ℕ) → A n → B n
 
 postulate
-  MapOfFamilies→MapOfProducts : (A B : ℕ-Family)
+  MapOfFamilies→MapOfProducts : (A B : ℕ-Family) (X : ℕ-Product A)
+    (Y : ℕ-Product B) → MapOfFamilies A B → fst X → fst Y
+
+  MapOfFamilies→MapOfProds : (A B : ℕ-Family)
     → MapOfFamilies A B → fst (Π A) → fst (Π B)
+
+oneIndexShiftMapOfFamilies : (A : ℕ-Diagram)
+  → MapOfFamilies (fst (indexShift 1 A)) (fst A)
+oneIndexShiftMapOfFamilies A = snd A
 
 EquivOfFamilies : ℕ-Family → ℕ-Family → Type ℓ-zero
 EquivOfFamilies A B =
@@ -289,6 +398,12 @@ EquivOfDiagrams : ℕ-Diagram → ℕ-Diagram → Type ℓ-zero
 EquivOfDiagrams (A , a) (B , b) =
   Σ[ e ∈ EquivOfFamilies A B ]
     ((n : ℕ) (x : A (1 + n)) → (fst e) n (a n x) ≡ b n ((fst e) (1 + n) x))
+
+postulate
+  shiftMap : (A : ℕ-Diagram) → fst (Π (fst A)) → fst (Π (fst A))
+{-shiftMap A = MapOfFamilies→MapOfProducts (fst (indexShift 1 A)) (fst A)
+                                          {!!} {!!}
+                                          (oneIndexShiftMapOfFamilies A)-}
 
 MapOfDiagrams : ℕ-Diagram → ℕ-Diagram → Type ℓ-zero
 MapOfDiagrams (A , a) (B , b) =
@@ -317,13 +432,13 @@ postulate
 FF1 : (A B : ℕ-Diagram) → MapOfDiagrams A B
   → (fst (Π (fst A)) × fst (Π (fst A)))
   → (fst (Π (fst B)) × fst (Π (fst B)))
-FF1 A B f = pairOfMaps (MapOfFamilies→MapOfProducts (fst A) (fst B) (fst f))
-                       (MapOfFamilies→MapOfProducts (fst A) (fst B) (fst f))
+FF1 A B f = pairOfMaps (MapOfFamilies→MapOfProds (fst A) (fst B) (fst f))
+                       (MapOfFamilies→MapOfProds (fst A) (fst B) (fst f))
 
 postulate
   specialCospan : (A B : ℕ-Diagram) (f : MapOfDiagrams A B) → 
     CoSpanOfMaps (FF1 A B f)
-                 (MapOfFamilies→MapOfProducts (fst A) (fst B) (fst f))
+                 (MapOfFamilies→MapOfProds (fst A) (fst B) (fst f))
                  (FF1 A B f)
 
   FrontPBLimit : (A B : ℕ-Diagram) (f : MapOfDiagrams A B) →
@@ -440,7 +555,7 @@ postulate
                                    (fst A k , KLimit (fst A k))
 
 
--- ugly, maybe hard
+-- ugly
 indexShiftHappy : (k : ℕ) (A : ℕ-Diagram)
   → fst (fst (snd (ℓim A))) k
    ≡ fst (Kℓim (fst A k))
@@ -459,7 +574,7 @@ indexShiftHappy k A =
 CC : ℕ → Type (ℓ-suc ℓ-zero)
 CC n = (k : ℕ) (A B : ℕ-Family) (f : MapOfFamilies A B)
        → ((m : ℕ) → isConnectedFun (k + n) (f m))
-       → isConnectedFun k (MapOfFamilies→MapOfProducts A B f)
+       → isConnectedFun k (MapOfFamilies→MapOfProds A B f)
 
 postulate
   CC→ConnectedFF1 : (A B : ℕ-Diagram) (f : MapOfDiagrams A B)
@@ -542,11 +657,24 @@ TowerOfLimit→Tower A p =
 postulate
   verySilly : (n k : ℕ) → (k + n) ≡ (n + k)
 
-  ConnectedMap→ConnectedMapTower : (n : ℕ) (X : Type ℓ-zero)
-    (A : ℕ-Diagram) (c : ConeℕDiag A X)
-    → isPostnikovTower A → (k : ℕ)
-    → isConnectedFun n (fst c (k + n))
-    → isConnectedFun n (fst c n)
+  verySilly' : (n m k : ℕ) → (1 + (k + (m + n)))
+                            ≡ (k + (1 + (m + n)))
+
+ConnectedMap→ConnectedMapTower : (n m : ℕ) (X : Type ℓ-zero)
+  (A : ℕ-Diagram) (c : ConeℕDiag A X)
+  → isPostnikovTower A → (k : ℕ)
+  → isConnectedFun n (fst c (k + (m + n)))
+  → isConnectedFun n (fst c (m + n))
+ConnectedMap→ConnectedMapTower n m X A c pA zero connc = connc
+ConnectedMap→ConnectedMapTower n m X A c pA (suc k) connc =
+  transport
+    (λ i → isConnectedFun n ((funExt (snd c (m + n))) i))
+    (isConnectedComp (snd A (m + n)) (fst c ((1 + m) + n)) n
+                     (isConnectedFunSubtr n m (snd A (m + n)) (snd pA (m + n)))
+                     (ConnectedMap→ConnectedMapTower n (1 + m) X A c pA k
+                        (transport
+                          (λ i → isConnectedFun n (fst c (verySilly' n m k i)))
+                          connc)))
 
 -- here's the trick
 DC→ConnectedPostProjHyp' : (k : ℕ) → (DC k)
@@ -587,7 +715,7 @@ DC→ConnectedPostProj :
   (k : ℕ) → (DC k) → (A : ℕ-Diagram) (p : isPostnikovTower A)
   → (n : ℕ) → isConnectedFun n (fst (fst (snd (ℓim A))) n)
 DC→ConnectedPostProj k Ax A p n =
-  ConnectedMap→ConnectedMapTower n (fst (ℓim A)) A (fst (snd (ℓim A)))
+  ConnectedMap→ConnectedMapTower n 0 (fst (ℓim A)) A (fst (snd (ℓim A)))
                                   p k
                                   (DC→ConnectedPostProjHyp k Ax A p n)
 
@@ -615,6 +743,6 @@ DC→PosEff n Ax A p =
                                   (fst (TowerOfLimit→Tower A p) m)
                                   (DC→ConnectedTowerMap n Ax A p m)
 
--- postnikov completeness follows from countable choice
+-- postnikov effectiveness follows from countable choice
 CC→PosEff : (n : ℕ) → (CC n) → PostnikovEffectiveness
 CC→PosEff n Ax = DC→PosEff (n + 1) (CC→DC n Ax)
