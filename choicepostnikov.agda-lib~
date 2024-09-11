@@ -1,4 +1,0 @@
-name: serre-finiteness
-include: .
-         ../CCPR/cubical
-flags: --cubical --no-import-sorts
