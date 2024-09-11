@@ -16,8 +16,8 @@ open import EasyLimits
 open import EasyLimMaps
 
 {- Contains definitions of countable choice, dependent choice and Postnikov
-   convergence and a proof that countable choice implies Postnikov
-   convergence -}
+   effectiveness and a proof that countable choice implies Postnikov
+   effectiveness -}
 
 {- Two variants of the axiom of choice in ∞-topoi -}
 CC : ℕ → Type (ℓ-suc ℓ-zero)
@@ -31,10 +31,10 @@ DC n = (k : ℕ) (A B : ℕ-Diagram) (f : MapOfDiagrams A B)
        → isConnectedFun k (MapOfDiagrams→MapOfLimits A B f)
 
 
-{- Postnikov convergence says that any Postnikov tower is the canonical
+{- Postnikov effectiveness says that any Postnikov tower is the canonical
    Postnikov tower of its limit -}
-PostnikovConvergence : Type (ℓ-suc ℓ-zero)
-PostnikovConvergence =
+PostnikovEffectiveness : Type (ℓ-suc ℓ-zero)
+PostnikovEffectiveness =
   (A : ℕ-Diagram) → isPostnikovTower A
   → EquivOfDiagrams (fst (PostnikovTowerOf (fst (ℓim A)))) (A)
        
@@ -278,7 +278,7 @@ DC→ConnectedTowerMap n Ax A p m =
 
 {- So, because the objects in the tower are truncated, "TowerFamilyMap" is an
    equivalence of diagrams -}
-DC→PosEff : (n : ℕ) → (DC n) → PostnikovConvergence
+DC→PosEff : (n : ℕ) → (DC n) → PostnikovEffectiveness
 DC→PosEff n Ax A p =
   MapOfDiagrams→EquivOfDiagrams
     (fst (PostnikovTowerOf (fst (ℓim A)))) A (TowerOfLimit→Tower A p)
@@ -286,8 +286,8 @@ DC→PosEff n Ax A p =
                                   (fst (TowerOfLimit→Tower A p) m)
                                   (DC→ConnectedTowerMap n Ax A p m)
 
-{- So, Postnikov convergence follows from countable choice -}
-CC→PosEff : (n : ℕ) → (CC n) → PostnikovConvergence
+{- So, Postnikov effectiveness follows from countable choice -}
+CC→PosEff : (n : ℕ) → (CC n) → PostnikovEffectiveness
 CC→PosEff n Ax = DC→PosEff (n + 1) (CC→DC n Ax)
 
 
@@ -306,9 +306,9 @@ module _ (P* : (A : ℕ-Family) → ℕ-Product A) where
                             (UniqueProductPath A (P* A) (Π A) i)
                             (UniqueProductPath B (P* B) (Π B) i) f)
 
-  CC*→PosEff : (n : ℕ) → (CC* n) → PostnikovConvergence
+  CC*→PosEff : (n : ℕ) → (CC* n) → PostnikovEffectiveness
   CC*→PosEff = transport
-                (λ i → (n : ℕ) → (CC*≃CC n (~ i)) → PostnikovConvergence)
+                (λ i → (n : ℕ) → (CC*≃CC n (~ i)) → PostnikovEffectiveness)
                 (CC→PosEff)
 
 
