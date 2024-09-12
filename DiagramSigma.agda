@@ -5,7 +5,7 @@ open import Cubical.Data.Nat renaming (elim to ℕElim)
 open import Cubical.Data.Nat.Order
 open import Cubical.Data.Sigma
 open import Cubical.Data.Unit
-open import Cubical.Foundations.Everything hiding (transpEquiv)
+open import Everything hiding (transpEquiv)
 open import Cubical.Functions.FunExtEquiv
 open import Cubical.HITs.Truncation
 open import Cubical.Homotopy.Connected

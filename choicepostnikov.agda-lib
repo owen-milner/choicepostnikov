@@ -1,4 +1,5 @@
 name: serre-finiteness
 include: .
          ../../CCPR/cubical
+	 -- edit to point to your local cubical library
 flags: --cubical --no-import-sorts

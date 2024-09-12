@@ -3,7 +3,7 @@ module Limits where
 
 open import Cubical.Data.Nat renaming (elim to ℕElim)
 open import Cubical.Data.Sigma
-open import Everything
+open import Cubical.Foundations
 open import Cubical.Foundations.Equiv.HalfAdjoint
 open import Cubical.Functions.FunExtEquiv
 
