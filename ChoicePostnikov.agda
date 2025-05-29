@@ -102,10 +102,10 @@ TowerFamilyMap A p n =
   (fst (fst (snd (ℓim A))) n)
 
 {- dependent choice (and hence countable choice) imply that "TowerFamilyMap"
-   has an inverse, hence they imply Postnikov convergence -} 
+   has an inverse, hence they imply Postnikov effectiveness -} 
 
 {- some useful facts about "TowerFamilyMap" -}
-private
+abstract
 
   {- It was defined using the universal property of the truncation -}
   ObvsIdentity :

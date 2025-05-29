@@ -1,4 +1,4 @@
-{-# OPTIONS --safe #-}
+
 module Everything where
 
 -- Basic cubical prelude
