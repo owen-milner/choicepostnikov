@@ -8,4 +8,6 @@ Main theorem is contained in "ChoicePostnikov.agda"
 
 "Preliminary.agda" is independent of the rest of the code and contains an early outline of the proof
 
-TODO: general cleaning up, especially in Limits and DiagramSigma files; add some ascii diagrams; delete Preliminary.agda?
+"Everything.agda" serves to import the foundations folder, I should change this
+
+TODO: general cleaning up, especially in Limits and DiagramSigma files; add some ascii diagrams; deal with "Everything.agda"; delete Preliminary.agda?
